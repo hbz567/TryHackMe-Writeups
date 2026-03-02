@@ -47,7 +47,6 @@ It revealed:
 Using Wappalyzer on `/spip` directory, we get the version information:
 - SPIP CMS 4.2.0
 - Backend: PHP  
-- jQuery 3.6.3  
 
 <img width="1920" height="803" alt="image" src="https://github.com/user-attachments/assets/19f8639e-d024-46ac-99f9-4fc7b745e159" />
 
@@ -84,7 +83,7 @@ This established initial access to the system.
 
 ## Post-Exploitation Enumeration
 
-Using a system shell through `shell` command inside meterpreter.
+Then I dropped to a system shell through `shell` command inside meterpreter.
 
 Gathering system information:
 
@@ -303,3 +302,4 @@ The privilege escalation path was particularly educational because it required u
 - How SUID binaries execute child processes  
 
 - How security frameworks like AppArmor enforce confinement  
+

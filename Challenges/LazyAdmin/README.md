@@ -1,9 +1,8 @@
-# Penetration Test Write-Up: LazyAdmin (TryHackMe)
+# Penetration Test Write-Up: LazyAdmin
 
 **Author:** Muhammad Hasan Bin Zahid  
 **Platform:** [TryHackMe](https://tryhackme.com/)  
 **Target:** LazyAdmin (10.113.159.10)  
-**Date:** March 4, 2026  
 
 ## Executive Summary
 This report details the penetration testing methodology applied to the LazyAdmin machine on TryHackMe. The engagement simulated a black-box test against a Linux-based web server. Initial access was achieved by chaining an information disclosure vulnerability (exposed SQL backup) with a weak file-upload mechanism in the SweetRice CMS. Privilege escalation to root was subsequently achieved by exploiting a misconfigured `sudo` permission that allowed execution of a script relying on a world-writable file. 
@@ -131,4 +130,5 @@ To secure this server, the following remediations should be implemented:
 2.  **Enforce Strong Password Policies (Medium Risk):** The administrative password (`Password123`) was trivial. Implement password complexity requirements and use modern hashing algorithms (like bcrypt or Argon2) instead of MD5.
 3.  **Implement Robust File Upload Validation (High Risk):** The file upload mechanism relied on a weak blacklist. It should be updated to use a strict whitelist of allowed file types (e.g., `.jpg`, `.png`), verify the file's "magic bytes" (MIME type), and store uploaded files in a directory where script execution is disabled at the web-server level.
 4.  **Audit Sudo Privileges and File Permissions (Critical Risk):** The privilege escalation relied on a world-writable script executed by root. Remove world-write permissions (`chmod o-w /etc/copy.sh`) from any file executed by a privileged process, and regularly audit `sudoers` configurations to follow the principle of least privilege.
+
 5.  **Update and Patch Content Management System (Critical Risk):** The server was running SweetRice CMS version 1.5.1, which suffers from publicly documented vulnerabilities, including the Arbitrary File Upload utilized for initial access. The CMS must be updated immediately to the latest stable version. If the SweetRice project is no longer actively maintained, the application should be migrated to a supported, modern CMS to ensure ongoing security patches are applied.
